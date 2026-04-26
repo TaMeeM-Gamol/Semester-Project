@@ -1,17 +1,29 @@
 import mongoose from "mongoose";
 
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  try {
-    console.log("Mongo URL:", process.env.MONGODB_URL);
+  if (cached.conn) return cached.conn;
 
-    await mongoose.connect(process.env.MONGODB_URL, {
-           dbName: "semesterProject",
-       });
-
-    console.log("Database connected");
-  } catch (error) {
-    console.log("MongoDB Error:", error.message);
+  if (!process.env.MONGODB_URL) {
+    throw new Error("MONGODB_URL is missing");
   }
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGODB_URL, {
+      dbName: "semesterProject",
+      bufferCommands: false,
+    });
+  }
+
+  cached.conn = await cached.promise;
+  console.log("Database connected");
+
+  return cached.conn;
 };
 
 export default connectDB;
