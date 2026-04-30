@@ -96,7 +96,10 @@ const Profile = () => {
         </div>
       </div>
       {/* {edit profile modal} */}
-      {showEdit && <ProfileModal setShowEdit={setShowEdit}/>}
+      {showEdit && (
+  <ProfileModal setShowEdit={setShowEdit} user={user} setUser={setUser} />
+  
+     )}
     </div>
   ) : (<Loading/>)
 }

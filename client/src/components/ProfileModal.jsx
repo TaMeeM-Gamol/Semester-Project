@@ -1,21 +1,65 @@
 import React, { useState } from 'react'
-import { dummyUserData } from '../assets/assets'
 import { Pencil } from 'lucide-react'
+import axios from "axios";
+import { useAuth } from "@clerk/react";
+import toast from "react-hot-toast";
 
-const ProfileModal = ({setShowEdit}) => {
+const ProfileModal = ({ setShowEdit, user, setUser }) => {
 
-    const user =dummyUserData
+    
     const [editForm, setEditForm] = useState({
-        username: user.username,
-        bio: user.bio,
-        location: user.location,
-        profile_picture: null,
-        cover_photo: null,
-        full_name: user.full_name,
-    })
-    const handleSaveProfile = async (e) => {
-        e.preventDefault();
+    username: user.username,
+    bio: user.bio,
+    location: user.location,
+    profile_picture: null,
+    cover_photo: null,
+    full_name: user.full_name,
+      });
+   const { getToken } = useAuth();
+
+const handleSaveProfile = async (e) => {
+  e.preventDefault();
+
+  try {
+    const formData = new FormData();
+
+    formData.append("username", editForm.username);
+    formData.append("bio", editForm.bio);
+    formData.append("location", editForm.location);
+    formData.append("full_name", editForm.full_name);
+
+    if (editForm.profile_picture) {
+      formData.append("profile", editForm.profile_picture);
     }
+
+    if (editForm.cover_photo) {
+      formData.append("cover", editForm.cover_photo);
+    }
+
+    const token = await getToken();
+
+    const { data } = await axios.post(
+      `${import.meta.env.VITE_BASEURL}/api/user/update`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (data.success) {
+      setUser(data.user);
+      setShowEdit(false);
+      toast.success("Profile updated");
+    } else {
+      toast.error(data.message);
+    }
+  } catch (error) {
+    console.log(error);
+    toast.error(error.message);
+  }
+};
   return (
     <div className='fixed top-0 bottom-0 left-0 right-0 z-110 h-screen overflow-y-scroll bg-black/50'>
       <div className='max-w-2xl sm:py-6 mx-auto'>
