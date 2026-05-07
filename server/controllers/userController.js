@@ -3,6 +3,7 @@ import imagekit from "../configs/imagekit.js";
 import { toFile } from "@imagekit/nodejs";
 import Connection from "../models/Connections.js";
 import { inngest } from "../inngest/index.js";
+import Post from "../models/Post.js";
 
 
 // get user data using userid
@@ -184,9 +185,7 @@ export const sendConnectionRequest = async (req, res) => {
          console.log("🔥 sending inngest event", newConnection._id.toString());
         await inngest.send({
         name: "app/connection-request",
-        data: {
-            connectionId: newConnection._id.toString()
-        }
+        data: { connectionId: newConnection._id.toString()}
         })
 
         return res.json({success: true, message: 'connection request sent successfully'})
@@ -247,4 +246,21 @@ export const acceptConnectionRequest = async (req, res) => {
         console.log(error);
         res.json({success: false, message: error.message})
     }
+}
+
+//get user profile
+export const getUserProfiles = async (req, res) => {
+ try {
+    const {profileId} = req.body;
+    const profile = await User.findById(profileId)
+    if(!profile){
+        return res.json({success: false, message: "profile not found"})
+    }
+    const post = await Post.find({user: profileId}).populate('user')
+    res.json({success: true, profile, posts})
+
+ } catch (error) {
+    console.log(error);
+    res.json({success: false, message: error.message})
+ }
 }

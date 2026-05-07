@@ -7,8 +7,8 @@ import RecentMessages from '../components/RecentMessages'
 const Feed = () => {
 
   const [feeds,setfeeds]= useState([])
-  const [Loading,setLoading]=useState(true)
-
+  const [loading,setLoading]=useState(true)
+ 
   const fetchfeeds = async () =>{
     setfeeds(dummyPostsData)
     setLoading(false)
@@ -18,7 +18,7 @@ const Feed = () => {
     fetchfeeds()
   },[])
 
-  return !Loading ? (
+  return !loading ? (
     <div className='h-full overflow-y-scroll no-scrollbar py-10 xl:pr-5 flex items-start justify-center xl:gap-8'>
       {/* {stories and post list} */}
       <div>
@@ -47,7 +47,7 @@ const Feed = () => {
 
       </div>
     </div>
-  ) : <loading/>
+  ) : <Loading/>
 }
 
 export default Feed
