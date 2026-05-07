@@ -2,7 +2,7 @@ import User from "../models/user.js"
 import imagekit from "../configs/imagekit.js";
 import { toFile } from "@imagekit/nodejs";
 import Connection from "../models/Connections.js";
-
+import { inngest } from "../inngest/index.js";
 
 
 // get user data using userid
@@ -177,10 +177,18 @@ export const sendConnectionRequest = async (req, res) => {
         })
         
         if (!connection){
-        await Connection.create({
-            from_user_id: userId,
-            to_user_id: id
+        const newConnection = await Connection.create({
+        from_user_id: userId,
+        to_user_id: id
         })
+         console.log("🔥 sending inngest event", newConnection._id.toString());
+        await inngest.send({
+        name: "app/connection-request",
+        data: {
+            connectionId: newConnection._id.toString()
+        }
+        })
+
         return res.json({success: true, message: 'connection request sent successfully'})
 
         }else if(connection && connection.status === 'accepted'){
