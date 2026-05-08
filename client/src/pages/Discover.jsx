@@ -1,26 +1,37 @@
 import { Search } from 'lucide-react'
 import React, { useState } from 'react'
-import { dummyConnectionsData } from '../assets/assets'
 import UserCard from '../components/UserCard'
 import Loading from '../components/Loading'
+import api, { getAuthHeaders } from '../lip/api'
+import { useAuth } from '@clerk/react'
+import toast from 'react-hot-toast'
+
 const Discover = () => {
   const [input,setInput]= useState ('')
   const [loading,setLoading]= useState (false)
-  const [users, setUsers] = useState(
-    Array.isArray(dummyConnectionsData) ? dummyConnectionsData : []
-  )
+  const [users, setUsers] = useState([])
+  const {getToken} = useAuth()
 
   const handleSearch = async (e) => {
     if(e.key ==='Enter'){
-      setUsers([])
-      setLoading(true)
-      setTimeout(()=>{
-        setUsers(Array.isArray(dummyConnectionsData) ? dummyConnectionsData : [])
-        setLoading(false)
-      }, 1000)
+      try {
+        setUsers([])
+        setLoading(true)
+        const {data} = await api.post('/api/user/discover', {input}, {
+          headers: await getAuthHeaders(getToken)
+        })
+
+        if (data.success) {
+          setUsers(data.users)
+        } else {
+          toast.error(data.message)
+        }
+      } catch (error) {
+        toast.error(error.message)
+      }
+      setLoading(false)
     }
   }
-
 
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-50 to-white'>
@@ -42,16 +53,12 @@ const Discover = () => {
           </div>
 
              <div className='flex flex-wrap gap-6'>
-             {Array.isArray(users) &&
-            users.map((user) => (
+             {Array.isArray(users) && users.map((user) => (
               <UserCard user={user} key={user._id} />
             ))}
              </div>
             
-            { 
-            loading && (<Loading height='60vh'/>) 
-            }
-              
+            {loading && (<Loading height='60vh'/>) }
       </div>
     </div>
   )

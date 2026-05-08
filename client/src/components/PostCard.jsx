@@ -3,16 +3,39 @@ import moment from 'moment'
 import React, { useState } from 'react'
 import { dummyUserData } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useAuth } from '@clerk/react'
+import api from '../api/axios'
+import toast from 'react-hot-toast'
 
 const PostCard = ({post}) => {
-
-    const postWithHashtags = post.content.replace(/#(\w+)/g, '<span class="text-indigo-500 cursor-pointer">#$1</span>');
-    const [likes,setLikes]= useState(post.likes_count)
-    const currentuser= dummyUserData
-    const handlelike= async () => {
-        
-    }
-    const navigate = useNavigate()
+  const navigate = useNavigate()
+  const postWithHashtags = post.content.replace(/#(\w+)/g, '<span class="text-indigo-500 cursor-pointer">$1</span>');
+  const { getToken } = useAuth()
+  const [likes, setLikes] = useState(post.likes || [])
+  const currentUser= useSelector((state) => state.user.value)
+  const handleLike = async () => {
+  
+    try {
+      const {data} = await api.post(`/api/post/like`, {postId: post._id}, {headers: {Authorization: `Bearer ${await getToken()}`}})
+      if (data.success) {
+        toast.success(data.message)
+        setLikes((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : []
+        if (safePrev.includes(currentUser?._id)) {
+        return safePrev.filter((id) => id !== currentUser?._id)
+        } else {
+        return [...safePrev, currentUser?._id]
+        }
+         })
+        } else {
+        toast(data.message)
+         }
+        } catch (error) {
+        toast.error(error.message)
+  }
+    
+}
   return (
     <div className='bg-white rounded-xl shadow p-4 space-y-4 w-full max-w-2xl'>
         {/* {user info} */}
@@ -45,8 +68,8 @@ const PostCard = ({post}) => {
         <div className='flex items-center gap-4 text-gray-600 text-sm pt-2 border-t border-gray-300'>
          
          <div className='flex items-center gap-1'>
-          <Heart className={`w-4 h-4 cursor-pointer ${likes.includes(currentuser._id) && 'text-red-500 fill-red-500'}`} onClick={handlelike}/>
-          <span>{likes.length}</span>
+          <Heart className={`w-4 h-4 cursor-pointer ${Array.isArray(likes) && likes.includes(currentUser?._id) ? 'text-red-500 fill-red-500' : ''}`} onClick={handleLike}/>
+          <span>{Array.isArray(likes) ? likes.length : 0}</span>
          </div>
 
           <div className='flex items-center gap-1'>

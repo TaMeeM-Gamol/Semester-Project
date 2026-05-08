@@ -36,9 +36,15 @@ export const addPost = async (req, res) => {
        })
        res.json({success: true, message:"post created successfully"});
     } catch (error) {
-        console.log(error);
-        res.json({success: true, message: error.message});
-    }
+
+  console.log(error)
+
+  return res.json({
+    success: false,
+    message: error.message
+  })
+
+}
 }
 
 //get post

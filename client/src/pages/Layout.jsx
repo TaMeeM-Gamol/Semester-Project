@@ -6,9 +6,10 @@ import { dummyUserData } from '../assets/assets'
 import Loading from '../components/Loading'
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useSelector } from 'react-redux'
 
 const Layout = () => {
- const user = dummyUserData
+ const user = useSelector((state) => state.user.value)
  const [sidebarOpen, setSidebarOpen] = useState(false)
   return  user ?(
     <div className='w-full flex h-screen'>

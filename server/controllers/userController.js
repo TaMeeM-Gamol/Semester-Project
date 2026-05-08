@@ -153,47 +153,52 @@ export const unfollowUser = async (req, res) => {
     }
     
 }
-
 //send connection request
 export const sendConnectionRequest = async (req, res) => {
     try {
-        const {userId} = req.auth()
-        const {id} = req.body;
+        const {userId} = await req.auth()
+        const {id} = req.body
 
-        // check if the user has sent more than 20 connection requests in last 24 hours
+        if (userId === id) {
+            return res.json({success: false, message: 'you cannot connect with yourself'})
+        }
 
         const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000)
         const connectionRequest = await Connection.find({from_user_id: userId, created_at: {$gt: last24Hours}})
-        if(connectionRequest.length >= 20){
+
+        if (connectionRequest.length >= 20) {
             return res.json({success: false, message: 'you have sent more than 20 connection requests in the last 24 hours'})
         }
- 
-        // check if users ara already connected
-         
+
         const connection = await Connection.findOne({
             $or: [
                 {from_user_id: userId, to_user_id: id},
                 {from_user_id: id, to_user_id: userId},
             ]
         })
-        
-        if (!connection){
-        const newConnection = await Connection.create({
-        from_user_id: userId,
-        to_user_id: id
-        })
-         console.log("🔥 sending inngest event", newConnection._id.toString());
-        await inngest.send({
-        name: "app/connection-request",
-        data: { connectionId: newConnection._id.toString()}
-        })
 
-        return res.json({success: true, message: 'connection request sent successfully'})
+        if (!connection) {
+            const newConnection = await Connection.create({
+                from_user_id: userId,
+                to_user_id: id
+            })
 
-        }else if(connection && connection.status === 'accepted'){
-        return res.json({success: false, message: 'you are already connected with this user'})
+            console.log("🔥 sending inngest event", newConnection._id.toString());
+
+            await inngest.send({
+                name: "app/connection-request",
+                data: {connectionId: newConnection._id.toString()}
+            })
+
+            return res.json({success: true, message: 'connection request sent successfully'})
         }
+
+        if (connection.status === 'accepted') {
+            return res.json({success: false, message: 'you are already connected with this user'})
+        }
+
         return res.json({success: false, message: 'connection request pending'})
+
     } catch (error) {
         console.log(error);
         res.json({success: false, message: error.message})
@@ -210,8 +215,8 @@ export const getUserConnections = async (req, res) => {
         const followers = user.followers
         const following = user.following
 
-        const pendingconnections = (await Connection.find({to_user_id: userId, status: 'pending'}).populate('from_user_id')).map(connection=>connection.from_user_id)
-        res.json({success: true, connections, followers, following, pendingconnections})
+        const pendingConnections = (await Connection.find({to_user_id: userId, status: 'pending'}).populate('from_user_id')).map(connection=>connection.from_user_id)
+        res.json({success: true, connections, followers, following, pendingConnections})
 
     } catch (error) {
         console.log(error);
@@ -256,7 +261,7 @@ export const getUserProfiles = async (req, res) => {
     if(!profile){
         return res.json({success: false, message: "profile not found"})
     }
-    const post = await Post.find({user: profileId}).populate('user')
+    const posts = await Post.find({user: profileId}).populate('user')
     res.json({success: true, profile, posts})
 
  } catch (error) {

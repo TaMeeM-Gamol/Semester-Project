@@ -3,10 +3,15 @@ import { Pencil } from 'lucide-react'
 import axios from "axios";
 import { useAuth } from "@clerk/react";
 import toast from "react-hot-toast";
+import { useDispatch, useSelector } from 'react-redux';
+import { updateUser } from '../features/user/userSlice';
 
-const ProfileModal = ({ setShowEdit, user, setUser }) => {
+const ProfileModal = ({ setShowEdit, setUser }) => {
 
-    
+  const dispatch = useDispatch();
+  const {getToken} = useAuth()
+
+    const user = useSelector((state)=>state.user.value)
     const [editForm, setEditForm] = useState({
     username: user.username,
     bio: user.bio,
@@ -15,49 +20,28 @@ const ProfileModal = ({ setShowEdit, user, setUser }) => {
     cover_photo: null,
     full_name: user.full_name,
       });
-   const { getToken } = useAuth();
+   
 
 const handleSaveProfile = async (e) => {
   e.preventDefault();
 
   try {
-    const formData = new FormData();
 
-    formData.append("username", editForm.username);
-    formData.append("bio", editForm.bio);
-    formData.append("location", editForm.location);
-    formData.append("full_name", editForm.full_name);
+    const userData= new FormData();
+    const {full_name, username, bio, location, profile_picture, cover_photo} = editForm
+    userData.append('username', username);
+    userData.append('bio', bio);
+    userData.append('location', location);
+    userData.append('full_name', full_name);
+    profile_picture && userData.append('profile', profile_picture)
+    cover_photo && userData.append('cover', cover_photo)
 
-    if (editForm.profile_picture) {
-      formData.append("profile", editForm.profile_picture);
-    }
+    const token = await getToken()
+    dispatch(updateUser({userData, token}))
 
-    if (editForm.cover_photo) {
-      formData.append("cover", editForm.cover_photo);
-    }
-
-    const token = await getToken();
-
-    const { data } = await axios.post(
-      `${import.meta.env.VITE_BASEURL}/api/user/update`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (data.success) {
-      setUser(data.user);
-      setShowEdit(false);
-      toast.success("Profile updated");
-    } else {
-      toast.error(data.message);
-    }
+    setShowEdit(false)
   } catch (error) {
-    console.log(error);
-    toast.error(error.message);
+   toast.error(error.message)
   }
 };
   return (
@@ -67,7 +51,9 @@ const handleSaveProfile = async (e) => {
            <h1 className='text-2xl font-bold text-gray-900 mb-6'>
             Edit Profile 
            </h1>
-            <form className='space-y-4' onSubmit={handleSaveProfile}>
+            <form className='space-y-4' onSubmit={e=> toast.promise(
+              handleSaveProfile(e),{loading: 'saving'}
+            )}>
                 {/* {profile picture} */}
                 <div className='flex flex-col items-start gap-3'>
                   <label htmlFor="profile_picture" className='block text-sm font-medium text-gray-700 mb-1'>
